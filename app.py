@@ -4,6 +4,7 @@ from models.snack import Snack
 from models.user import User
 from database import db
 from flask_login import LoginManager, login_user, current_user, logout_user, login_required
+from datetime import datetime, timezone
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = "my_secret_key"
@@ -75,9 +76,12 @@ def create_snack():
         date = data.get("date")
         diet = data.get("diet")
 
-        if name and date:
+        if name:
+            if date:
+                date = datetime.strptime(date, "%d/%m/%Y %H:%M")
+                
             snack = Snack(name=name,
-                          description=description, date=date, diet=diet, user_id=user_id)
+                          description=description, diet=diet, date=date, user_id=user_id)
             db.session.add(snack)
             db.session.commit()
             return jsonify({"message": "Refeição cadastrada com sucesso!!!"})
