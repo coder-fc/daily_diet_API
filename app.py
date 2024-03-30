@@ -4,7 +4,7 @@ from models.snack import Snack
 from models.user import User
 from database import db
 from flask_login import LoginManager, login_user, current_user, logout_user, login_required
-from datetime import datetime, timezone
+from datetime import datetime
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = "my_secret_key"
@@ -66,7 +66,7 @@ def create_user():
     return jsonify({"message": "Dados inválidos"}), 400
 
 
-@app.route('/create_snack', methods=["POST"])
+@app.route('/snack', methods=["POST"])
 def create_snack():
     if current_user.is_authenticated:
         data = request.json
@@ -79,7 +79,7 @@ def create_snack():
         if name:
             if date:
                 date = datetime.strptime(date, "%d/%m/%Y %H:%M")
-                
+
             snack = Snack(name=name,
                           description=description, diet=diet, date=date, user_id=user_id)
             db.session.add(snack)
@@ -89,6 +89,40 @@ def create_snack():
         return jsonify({"message": "Erro ao cadastrar refeição"}), 400
     else:
         return jsonify({"message": "Usuário não autenticado"}), 401
+
+
+@app.route('/snack/<int:id_snack>', methods=["PUT"])
+@login_required
+def update_snack(id_snack):
+    data = request.json
+    snack = Snack.query.get(id_snack)
+    name = data.get("name")
+    description = data.get("description")
+    date = data.get("date")
+    diet = data.get("diet")
+
+    if name is None:
+        name = snack.name
+
+    if description is None:
+        description = snack.description
+
+    if diet is None:
+        diet = snack.diet
+
+    if date:
+        date = datetime.strptime(date, "%d/%m/%Y %H:%M")
+    else:
+        date = snack.date
+
+    if current_user.id != snack.user_id:
+        return jsonify({"message": "Não é permitido alterar a refeição de outro usuário!"}), 403
+    snack.name = name
+    snack.description = description
+    snack.date = date
+    snack.diet = diet
+    db.session.commit()
+    return jsonify({"message": "Alteração realizada com sucesso"})
 
 
 if __name__ == '__main__':
