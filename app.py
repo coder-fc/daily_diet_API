@@ -125,5 +125,60 @@ def update_snack(id_snack):
     return jsonify({"message": "Alteração realizada com sucesso"})
 
 
+@app.route('/snacks', methods=["GET"])
+@login_required
+def get_snacks_user():
+    user_snacks = Snack.query.filter_by(user_id=current_user.id).all()
+
+    snacks_list = []
+
+    for snack in user_snacks:
+        snacks_list.append({
+            "id": snack.id,
+            "name": snack.name,
+            "description": snack.description,
+            "date": snack.date.strftime("%d/%m/%Y %H:%M"),
+            "diet": snack.diet
+        })
+
+    if snacks_list == []:
+        return jsonify({"message": "Usuário não possuí refeições cadastradas."})
+
+    return jsonify(snacks_list)
+
+
+@app.route('/snack/<int:id_snack>', methods=["DELETE"])
+@login_required
+def delete_snack(id_snack):
+    snack = Snack.query.get(id_snack)
+    if snack:
+        if current_user.id != snack.user_id:
+            return jsonify({"message": "Não é permitido deletar a refeição de outro usuário!"}), 403
+        db.session.delete(snack)
+        db.session.commit()
+        return jsonify({"message": f"Refeição {id_snack} deletada com sucesso!"})
+
+    return jsonify({"message": f"Refeição não encontrada!"})
+
+
+@app.route('/snack/<int:id_snack>', methods=["GET"])
+@login_required
+def read_snack(id_snack):
+    snack = Snack.query.get(id_snack)
+    if snack:
+        if current_user.id != snack.user_id:
+            return jsonify({"message": "Não é permitido visualizar a refeição de outro usuário!"}), 403
+        db.session.delete(snack)
+        db.session.commit()
+        return {
+            "name": snack.name,
+            "description": snack.description,
+            "date": snack.date.strftime("%d/%m/%Y %H:%M"),
+            "diet": snack.diet
+        }
+
+    return jsonify({"message": f"Refeição não encontrada!"})
+
+
 if __name__ == '__main__':
     app.run(debug=True)
